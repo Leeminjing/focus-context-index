@@ -1,0 +1,21 @@
+{
+  "repository": "https://github.com/Leeminjing/Focus",
+  "commit": "08fe98c28896992c6195912e95b507599b9dcd76",
+  "files": {
+    "backend/app/desktop/patrol/agent_loop/context_expansion/semantic_grounding.py": "fb07c517ae029bdeda0ca46ca5521e0a40cda29b74573c3a4f56a192080a8e62",
+    "backend/app/desktop/patrol/agent_loop/context_expansion/semantic_index.py": "012e501a16b83490496c45d4008c854b1cbdc4263bcf04e555f750df035d9f6b",
+    "backend/app/desktop/patrol/agent_loop/context_expansion/semantic_indexer.py": "22e14e8a601dcfd775f457688bd735fc7df37b3649918bc002ae52654b7162f7",
+    "backend/app/desktop/patrol/agent_loop/context_expansion/segment_projection.py": "7999493cafb8afea13fbc26817a03a2955033c94b4f737e93484cb056a7e2ba0",
+    "backend/app/desktop/patrol/agent_loop/context_expansion/interpretation_inputs.py": "918f9afa3f468a02dce358062ddb2bd59dd3b298b8eaa914b253066ffdca0488",
+    "backend/app/desktop/patrol/agent_loop/context_expansion/interpretation_record.py": "76965967d8053792161dd7a3d5cc57977ec21368f20cba71f24b3529b8eebba7",
+    "backend/app/desktop/patrol/agent_loop/context_expansion/revision_interpretation.py": "8211d486d64b1f2f08d3cacb11d0852987f5c4216b81279b8a784fe999233f7b",
+    "backend/app/desktop/patrol/agent_loop/context_expansion/index_assembly.py": "eae0f154a0fcf8ffc9aaca9c30ef9a6de00e003e399ab394e820b77be0d91776",
+    "backend/app/desktop/patrol/agent_loop/context_expansion/index_build_contracts.py": "67833b701a5e25a939552d8e6855e51b12f060a4a02dfccf4d751f607eb73ca9",
+    "backend/app/desktop/patrol/agent_loop/context_expansion/index_scheduling.py": "27e247b69978eae41f276cd642321ab5b3b80b174e59e9ba9a382ca8d9537675",
+    "backend/app/desktop/patrol/agent_loop/context_expansion/contracts.py": "81e55ee5847e95ced352706cab9bad2b88fdc1e2aef55b5fd25757e2a18bba44",
+    "backend/app/desktop/contexts/evolution/schemas.py": "b60bd2cd94cc262f44c5a678f9a1befdbaa3b724836cac7959d9a1a447bea637",
+    "backend/app/desktop/contexts/curation/contracts.py": "bc5eeede1f9e315a8ffaa3553fdb9f158b7f0ff45fa5bc732831974393ae5f76",
+    "backend/packages/harness/focus/messages/usage.py": "7e9df61b5de3f4778887e733a69e7c270159c2dbbb267a8597c6b3340b6faf8c",
+    "backend/tests/test_semantic_segment_sizing.py": "dc1374a77c388e7a7183410d617dbf8ca40324a9a23dc0cc0aa740056e821243"
+  }
+}

@@ -1,0 +1,6 @@
+include NOTICE
+recursive-include docs *.md *.json
+recursive-include examples *.py
+recursive-include benchmarks *.py
+recursive-include tools *.py
+recursive-include tests *.py *.json

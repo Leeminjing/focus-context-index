@@ -1,0 +1,102 @@
+{
+  "model": "deepseek-flash",
+  "implementation": "production builder; full originals when request window, exact-read limit and remaining local model budget allow; otherwise existing tail/catalog flow",
+  "test_only_prefill_patch": false,
+  "fixture": {
+    "history_messages": 55,
+    "append_messages": 2,
+    "data": "synthetic; no customer data"
+  },
+  "segment_size": 12,
+  "concurrency": 4,
+  "samples_per_configuration": 1,
+  "scope": "index service only; excludes Curator, Patrol and derived-context material synthesis",
+  "production": {
+    "cold": {
+      "duration_ms": 61051.03310001141,
+      "model_calls": 12,
+      "input_tokens": 29536,
+      "output_tokens": 16331,
+      "reused_segments": 0,
+      "recomputed_segments": 5,
+      "locally_projected_messages": 55,
+      "interpretation_read_rounds": 0,
+      "quality_state": "complete"
+    },
+    "append": {
+      "duration_ms": 43896.04850001342,
+      "model_calls": 4,
+      "input_tokens": 16218,
+      "output_tokens": 7399,
+      "reused_segments": 4,
+      "recomputed_segments": 1,
+      "locally_projected_messages": 9,
+      "interpretation_read_rounds": 0,
+      "quality_state": "complete"
+    },
+    "exact": {
+      "duration_ms": 57.07239999901503,
+      "model_calls": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "reused_segments": 4,
+      "recomputed_segments": 1,
+      "locally_projected_messages": 0,
+      "interpretation_read_rounds": 0,
+      "quality_state": "complete"
+    }
+  },
+  "previous_production_baseline": {
+    "cold": {
+      "duration_ms": 69338.64470000844,
+      "model_calls": 12,
+      "input_tokens": 30323,
+      "output_tokens": 18240,
+      "reused_segments": 0,
+      "recomputed_segments": 5,
+      "interpretation_read_rounds": 0,
+      "quality_state": "complete"
+    },
+    "append": {
+      "duration_ms": 47177.65529999451,
+      "model_calls": 5,
+      "input_tokens": 22881,
+      "output_tokens": 7404,
+      "reused_segments": 4,
+      "recomputed_segments": 1,
+      "interpretation_read_rounds": 1,
+      "quality_state": "complete"
+    },
+    "exact": {
+      "duration_ms": 74.07600000442471,
+      "model_calls": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "reused_segments": 4,
+      "recomputed_segments": 1,
+      "interpretation_read_rounds": 1,
+      "quality_state": "complete"
+    }
+  },
+  "cross_segment_correction": {
+    "quality_state": "complete",
+    "interpretation_read_rounds": 0,
+    "reused_segments": 2,
+    "append_duration_ms": 64197.452000007615,
+    "joint_statements": [
+      "The investigation initially suspected the connection pool, later ruled it out, and confirmed a thread-pool deadlock as the cause."
+    ]
+  },
+  "validation": {
+    "deterministic_tests_passed": 202,
+    "production_real_model_tests_passed": 2
+  },
+  "limitations": [
+    "Single samples; no P50/P95 or stable speedup claim.",
+    "Historical test-only 26.85-second append was not reproduced: production append took 43.90 seconds.",
+    "Model output, joint-verification requirements and provider latency vary between runs.",
+    "The separate causal-correction fixture took 64.20 seconds for append despite zero read rounds.",
+    "Historical 30/4 degraded result is retained unchanged in the parent directory.",
+    "Long tool outputs and production traffic distribution have not been benchmarked."
+  ]
+}

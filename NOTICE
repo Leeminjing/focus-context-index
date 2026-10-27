@@ -1,0 +1,23 @@
+focus-context-index
+
+Portions of this project are derived from Focus:
+https://github.com/Leeminjing/Focus
+Commit: 08fe98c28896992c6195912e95b507599b9dcd76
+Licensed under the Apache License, Version 2.0; see LICENSE.
+
+The source paths and SHA-256 digests of the upstream files are recorded in
+docs/upstream-manifest.json. Existing copyright and license notices are retained.
+
+Changes in this distribution:
+- Replaced Focus application imports with independent immutable wire contracts.
+- Narrowed evidence references to conversation messages; Mission and other
+  application-specific evidence types remain in the host.
+- Preserved source addresses, canonical hashes, schema versions, prompts,
+  grounding rules and historical proof serialization.
+- Added independent engine orchestration, model/admission/store interfaces,
+  in-memory and SQLite adapters, bounded workers and per-attempt receipts.
+- Replaced repeated full-message scans in assembly and interpretation inputs
+  with message maps; moved eligibility inventory construction outside a loop.
+- Added host integration examples, compatibility fixtures and benchmarks.
+- Adapted invalid original-read scope checks to structured retry feedback.
+- Applied formatting and removed an unused upstream import.

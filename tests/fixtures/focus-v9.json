@@ -1,0 +1,223 @@
+{
+  "upstream_commit": "08fe98c28896992c6195912e95b507599b9dcd76",
+  "raw_messages": [
+    {
+      "id": "goal",
+      "role": "human",
+      "content": "验证分组和原始哈希。"
+    },
+    {
+      "id": "call",
+      "role": "ai",
+      "tool_calls": [
+        {
+          "id": "a",
+          "name": "test",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "id": "return",
+      "role": "tool",
+      "tool_call_id": "a",
+      "content": {
+        "passed": true
+      }
+    },
+    {
+      "id": "reference",
+      "role": "human",
+      "content": "仅作参考",
+      "semantic_policy": "reference_only"
+    }
+  ],
+  "index": {
+    "index_id": "a96dae1b183c8f0b1546f05f50eb04d19188841f34ac9bf76f8424285952aca5",
+    "source": {
+      "context_id": "golden-context",
+      "revision_id": "golden-revision",
+      "generation": 1,
+      "execution_thread_id": "thread",
+      "checkpoint_ns": "",
+      "checkpoint_id": "checkpoint",
+      "payload_mode": "checkpoint"
+    },
+    "source_content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "context_role": "primary",
+    "active_objective": "parity",
+    "messages": [
+      {
+        "message_id": "goal",
+        "ordinal": 0,
+        "role": "human",
+        "content": "验证分组和原始哈希。",
+        "tool_calls": [],
+        "tool_call_id": null,
+        "name": null,
+        "status": null,
+        "source_item_ids": [],
+        "semantic_policy": "index",
+        "source_ordinal": 0
+      },
+      {
+        "message_id": "call",
+        "ordinal": 1,
+        "role": "ai",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "a",
+            "name": "test",
+            "args": {}
+          }
+        ],
+        "tool_call_id": null,
+        "name": null,
+        "status": null,
+        "source_item_ids": [],
+        "semantic_policy": "index",
+        "source_ordinal": 1
+      },
+      {
+        "message_id": "return",
+        "ordinal": 2,
+        "role": "tool",
+        "content": {
+          "passed": true
+        },
+        "tool_calls": [],
+        "tool_call_id": "a",
+        "name": null,
+        "status": null,
+        "source_item_ids": [],
+        "semantic_policy": "index",
+        "source_ordinal": 2
+      },
+      {
+        "message_id": "reference",
+        "ordinal": 3,
+        "role": "human",
+        "content": "仅作参考",
+        "tool_calls": [],
+        "tool_call_id": null,
+        "name": null,
+        "status": null,
+        "source_item_ids": [],
+        "semantic_policy": "reference_only",
+        "source_ordinal": 3
+      }
+    ],
+    "segments": [
+      {
+        "segment_id": "8e62b24934621f1e571ea3f30693230a4ada42990de08288371434dc8aa39330",
+        "ordinal": 0,
+        "message_ids": [
+          "goal"
+        ],
+        "descriptor": "human:验证分组和原始哈希。",
+        "content_hash": "d95a6ab3e51378da1babab1e20b64dd426062eed39d47b739c24774aa005de51"
+      },
+      {
+        "segment_id": "7d369e3439fc1b115932722038b8f57c2e8b7f9018c7dca501ac6f4e9adacbba",
+        "ordinal": 1,
+        "message_ids": [
+          "call",
+          "return"
+        ],
+        "descriptor": "ai | tool:{\"passed\": true}",
+        "content_hash": "df65729118983fa6d0e686fef5dd0dd108d15516f06fe265b8f658769ce2e7ca"
+      },
+      {
+        "segment_id": "a358730c1d1f0ad5c9d97034b5895c22006382b5e686c8d48d8cd38235eda5e3",
+        "ordinal": 2,
+        "message_ids": [
+          "reference"
+        ],
+        "descriptor": "human:仅作参考",
+        "content_hash": "928f397333e30a2dd14a9024e24f77a7c81818ba2f777aa2376d8b7531341fc6"
+      }
+    ],
+    "semantic_units": [
+      {
+        "unit_id": "2d8c7417f9938f57a281cc8141fb99573e62b99cbb985177e266197bdf49daad",
+        "kind": "claim",
+        "authority": "hypothesis",
+        "statement": "human:验证分组和原始哈希。",
+        "evidence_refs": [
+          {
+            "source": {
+              "context_id": "golden-context",
+              "revision_id": "golden-revision",
+              "generation": 1,
+              "execution_thread_id": "thread",
+              "checkpoint_ns": "",
+              "checkpoint_id": "checkpoint",
+              "payload_mode": "checkpoint"
+            },
+            "message_id": "goal"
+          }
+        ]
+      },
+      {
+        "unit_id": "736417673c313aaf9cbeb64cccce16d608b269b51a10a6216ed7c6fe69ad54de",
+        "kind": "claim",
+        "authority": "hypothesis",
+        "statement": "ai | tool:{\"passed\": true}",
+        "evidence_refs": [
+          {
+            "source": {
+              "context_id": "golden-context",
+              "revision_id": "golden-revision",
+              "generation": 1,
+              "execution_thread_id": "thread",
+              "checkpoint_ns": "",
+              "checkpoint_id": "checkpoint",
+              "payload_mode": "checkpoint"
+            },
+            "message_id": "call"
+          },
+          {
+            "source": {
+              "context_id": "golden-context",
+              "revision_id": "golden-revision",
+              "generation": 1,
+              "execution_thread_id": "thread",
+              "checkpoint_ns": "",
+              "checkpoint_id": "checkpoint",
+              "payload_mode": "checkpoint"
+            },
+            "message_id": "return"
+          }
+        ]
+      }
+    ],
+    "rejected_units": [],
+    "projected_unit_ids": [],
+    "fallback_segment_ids": [
+      "7d369e3439fc1b115932722038b8f57c2e8b7f9018c7dca501ac6f4e9adacbba",
+      "8e62b24934621f1e571ea3f30693230a4ada42990de08288371434dc8aa39330"
+    ],
+    "quality_state": "degraded",
+    "coverage": {
+      "message_ids": [
+        "goal",
+        "call",
+        "return",
+        "reference"
+      ],
+      "segment_ids": [
+        "8e62b24934621f1e571ea3f30693230a4ada42990de08288371434dc8aa39330",
+        "7d369e3439fc1b115932722038b8f57c2e8b7f9018c7dca501ac6f4e9adacbba",
+        "a358730c1d1f0ad5c9d97034b5895c22006382b5e686c8d48d8cd38235eda5e3"
+      ],
+      "covered_message_count": 4,
+      "protocol_exchange_count": 1
+    },
+    "index_schema_version": "revision-semantic-index-v9",
+    "segmenter_version": "seg:7857f7a6c879293fd3523fa103e2354ee55e2c00564e5b01c117f30f3b80",
+    "projector_version": "supervised-segment-projector-v2",
+    "inheritance": null,
+    "interpretation": null
+  }
+}
