@@ -10,6 +10,7 @@ import platform
 from collections import defaultdict
 from hashlib import sha256
 from pathlib import Path
+from time import perf_counter
 
 import focus_context_index
 import pydantic
@@ -23,6 +24,7 @@ from focus_context_index import (
     IndexPolicy,
 )
 from focus_context_index.contracts import stable_expansion_hash
+from .quality import quality_proxy
 
 
 def corpus():
@@ -110,35 +112,6 @@ def freeze(case, raw, generation):
     )
 
 
-def quality_proxy(index, expected_joint_sets):
-    eligible = {m.message_id for m in index.messages if m.semantic_policy == "index"}
-    projected = set(index.projected_unit_ids)
-    cited = {
-        r.message_id
-        for u in index.semantic_units
-        if u.unit_id in projected
-        for r in u.evidence_refs
-    }
-    proof = index.interpretation
-    accepted = set(proof.accepted_claim_keys)
-    support_sets = [
-        set(s.message_id for s in d.supports) for d in proof.drafts if d.claim_key in accepted
-    ]
-    return {
-        "quality_state": index.quality_state,
-        "eligible_message_citation_coverage": len(cited & eligible) / len(eligible)
-        if eligible
-        else 1.0,
-        "fallback_segments": len(index.fallback_segment_ids),
-        "quarantined_claims": len(index.rejected_units),
-        "expected_joint_support_sets": len(expected_joint_sets),
-        "found_joint_support_sets": sum(
-            any(set(e) <= s for s in support_sets) for e in expected_joint_sets
-        ),
-        "human_semantic_review": "pending",
-    }
-
-
 def percentile(values, p):
     ordered = sorted(values)
     return ordered[max(0, math.ceil(len(ordered) * p) - 1)]
@@ -151,21 +124,29 @@ def summarize(rows):
     result = []
     for (case, size, phase), group in sorted(groups.items()):
         successful = [r for r in group if r["outcome"] == "ready"]
+        qualified = [r for r in successful if r["quality"]["quality_pass"] is True]
         item = {
             "case": case,
             "segment_size": size,
             "phase": phase,
             "samples": len(group),
             "failures": len(group) - len(successful),
+            "quality_passed": len(qualified),
+            "quality_failed": sum(r["quality"]["quality_pass"] is False for r in successful),
+            "quality_pending": sum(r["quality"]["quality_pass"] is None for r in successful),
         }
         # Failed runs stay counted above; quantiles are explicitly conditional on success.
-        for metric in ("wait_duration_ms", "model_calls", "queue_p95_ms"):
+        for metric in ("caller_duration_ms", "wait_duration_ms", "model_calls", "queue_p95_ms"):
             values = [r["stats"][metric] for r in successful]
             item[metric] = (
                 {"success_p50": percentile(values, 0.5), "success_p95": percentile(values, 0.95)}
                 if values
                 else None
             )
+        values = [r["stats"]["caller_duration_ms"] for r in qualified]
+        item["qualified_caller_duration_ms"] = (
+            {"p50": percentile(values, 0.5), "p95": percentile(values, 0.95)} if values else None
+        )
         result.append(item)
     return result
 
@@ -219,14 +200,17 @@ async def benchmark(*, factory, mode, repeats, segment_sizes, seed):
                         **BuildStats(mode="full").model_dump(mode="json", exclude={"receipts"}),
                         "queue_p95_ms": 0,
                         "receipt_count": 0,
+                        "caller_duration_ms": None,
                     },
                 )
                 rows.append(row)
                 continue
+            caller_started = perf_counter()
             try:
                 result = await engine.build(
                     snapshot=target, policy=policy, baseline=baseline if phase == "append" else None
                 )
+                caller_duration_ms = (perf_counter() - caller_started) * 1000
                 baseline = result.artifact
                 row.update(
                     outcome="ready",
@@ -236,6 +220,7 @@ async def benchmark(*, factory, mode, repeats, segment_sizes, seed):
                 )
                 stats = result.stats
             except IndexBuildError as exc:
+                caller_duration_ms = (perf_counter() - caller_started) * 1000
                 blocked = True
                 row.update(
                     outcome="failed", error_type=type(exc.cause).__name__, error=str(exc)[:500]
@@ -246,10 +231,11 @@ async def benchmark(*, factory, mode, repeats, segment_sizes, seed):
                 **stats.model_dump(mode="json", exclude={"receipts"}),
                 "queue_p95_ms": percentile(queues, 0.95) if queues else 0,
                 "receipt_count": len(stats.receipts),
+                "caller_duration_ms": caller_duration_ms,
             }
             rows.append(row)
     return {
-        "schema": "context-index-benchmark-v1",
+        "schema": "context-index-benchmark-v2",
         "implementation_hash": stable_expansion_hash(
             "index-engine-source-v1",
             {
@@ -285,6 +271,11 @@ def main():
     parser.add_argument("--segment-sizes", nargs="+", type=int, default=[12, 20, 30])
     parser.add_argument("--seed", type=int, default=20261027)
     parser.add_argument("--output", type=Path, default=Path("benchmark-results/latest.json"))
+    parser.add_argument(
+        "--require-quality",
+        action="store_true",
+        help="exit nonzero unless every ready sample passes bound semantic review",
+    )
     args = parser.parse_args()
     if args.adapter:
         name, attribute = args.adapter.split(":", 1)
@@ -320,6 +311,10 @@ def main():
     )
     if failures:
         raise SystemExit(1)
+    if args.require_quality and any(
+        r.get("quality", {}).get("quality_pass") is not True for r in report["runs"]
+    ):
+        raise SystemExit(2)
 
 
 if __name__ == "__main__":

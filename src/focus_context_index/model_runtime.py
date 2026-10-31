@@ -7,12 +7,20 @@ import json
 from time import perf_counter
 from uuid import uuid4
 
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from .api import AttemptReceipt
+from .cancellation import complete_before_cancel
 from .errors import IndexBudgetExceeded, StructuredResultValidationError
 from .ports import ModelCall
 from .sizing import estimate_raw_tokens
+
+
+class _ResponseFailure(Exception):
+    """Only errors from response decoding/validation may enter the retry loop."""
+
+    def __init__(self, cause):
+        self.cause = cause
 
 
 class ManagedModel:
@@ -51,7 +59,7 @@ class ManagedModel:
             raise ValueError("model configuration changed during frozen build")
         return model
 
-    def _call(self, schema, system, payload, *, call_id="preview"):
+    def _call(self, schema, system, payload, *, call_id="preview", attempt=1):
         text = json.dumps(
             {"schema": schema.model_json_schema(), "system": system, "payload": payload},
             ensure_ascii=False,
@@ -80,6 +88,7 @@ class ManagedModel:
             phase=self._phase,
             estimated_input_tokens=int(estimated),
             output_token_reserve=output_reserve,
+            attempt=attempt,
         )
 
     def fits_request(self, schema, system, payload):
@@ -113,37 +122,45 @@ class ManagedModel:
         request = payload
         for attempt in range(self._policy.max_attempts):
             try:
-                return await self._attempt(schema, system, request, validator)
-            except (ValidationError, StructuredResultValidationError) as exc:
+                return await self._attempt(schema, system, request, validator, attempt=attempt + 1)
+            except _ResponseFailure as failure:
+                exc = failure.cause
                 if not getattr(exc, "retryable", True) or attempt + 1 >= self._policy.max_attempts:
-                    raise
+                    raise exc from failure
                 request = {**payload, "validation_feedback": str(exc)[:1500]}
         raise RuntimeError("structured invocation did not execute")
 
-    async def _attempt(self, schema, system, payload, validator):
+    async def _attempt(self, schema, system, payload, validator, *, attempt):
         if not self.fits_request(schema, system, payload):
             raise IndexBudgetExceeded("complete model request exceeds input/window capacity")
         queued = perf_counter()
         async with self._slots.slot(background=self._background):
             queue_ms = (perf_counter() - queued) * 1000
-            call = self._call(schema, system, payload, call_id=uuid4().hex)
+            call = self._call(schema, system, payload, call_id=uuid4().hex, attempt=attempt)
             model = self._new_model()
             await self._admission.reserve(call)
             started = perf_counter()
             outcome, error_type = "error", None
             try:
-                raw = await model.invoke(schema, system, payload)
-                result = schema.model_validate(
-                    raw.model_dump(mode="json") if isinstance(raw, schema) else raw
-                )
-                validator(result)
+                try:
+                    raw = await model.invoke(schema, system, payload)
+                    result = schema.model_validate(
+                        raw.model_dump(mode="json") if isinstance(raw, BaseModel) else raw
+                    )
+                    validator(result)
+                except (
+                    json.JSONDecodeError,
+                    ValidationError,
+                    StructuredResultValidationError,
+                ) as exc:
+                    raise _ResponseFailure(exc) from exc
                 outcome = "success"
                 return result
             except asyncio.CancelledError:
                 outcome, error_type = "cancelled", "CancelledError"
                 raise
             except BaseException as exc:
-                error_type = type(exc).__name__
+                error_type = type(exc.cause if isinstance(exc, _ResponseFailure) else exc).__name__
                 raise
             finally:
                 rows = tuple(getattr(model, "last_attempt_records", ()))
@@ -169,15 +186,11 @@ class ManagedModel:
                     duration_ms=(perf_counter() - started) * 1000,
                     queue_ms=queue_ms,
                     error_type=error_type,
+                    attempt=attempt,
                 )
                 self._receipts.append(receipt)
                 self.last_attempt_records += rows
-                settlement = asyncio.create_task(self._admission.settle(call, receipt))
-                try:
-                    await asyncio.shield(settlement)
-                except asyncio.CancelledError:
-                    await settlement
-                    raise
+                await complete_before_cancel(self._admission.settle(call, receipt))
 
 
 def _tokens(rows, key):

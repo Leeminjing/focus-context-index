@@ -1,6 +1,12 @@
 # Focus 接入
 
-本轮提供可运行示例与真实模型工厂接法，尚未修改 Focus 的 `PortfolioSemanticIndexService`。迁移时把它逐步收薄为宿主适配层，Portfolio catalog、Curator、Patrol 和数据库授权继续留在 Focus。
+v0.2 的配套接入位于 Focus 的 `codex/context-index-integration` 分支。`IndependentPortfolioSemanticIndexService` 调用独立引擎，`CuratorCoordinationStage` 默认使用该适配服务。Portfolio catalog、Curator、Patrol 和数据库授权继续留在 Focus；旧服务保留为对照实现。分支接入不等于已部署到正在运行的 Focus。
+
+适配代码为 `backend/app/desktop/patrol/agent_loop/context_expansion/independent_portfolio_index.py`，复用原有索引、局部凭据和预算预留表，没有另建第二套预算账本。
+
+`FocusIndexStore` 在模型调用期间只提交局部凭据。完整 Artifact 暂存为候选，原 Portfolio 服务在目录容量检查之后，用原事务重验依赖、采用持久赢家并发布所有索引。因此完整发布成功的边界是宿主服务的 `build()`；内部 Engine 返回的候选不代表完整 Portfolio 已提交。Curator 只接收宿主发布后的 catalog。
+
+`FocusIndexAdmission` 在缓存读取前重验当前 grant、已发布来源与 Round owner，每次模型尝试按 `call_id` 写入原耐久预留，重试计入原 retry 额度。已托管的逐次用量在批次汇总中跳过，避免重复计费。用量未知时保留原来的 unknown 预留与恢复规则。
 
 ## 安装与模型
 
@@ -58,7 +64,7 @@ result = await engine.build(
 index = FocusRevisionSemanticIndex.model_validate(result.index.model_dump(mode="json"))
 ```
 
-这里的 `FocusRevisionSemanticIndex` 指 Focus 的原 `RevisionSemanticIndex` 类。`result.artifact` 应由宿主保存，用于下一版 baseline；`result.index` 是原 wire 格式。库中的 namespace 是缓存隔离域，必须由可信宿主确定；checkpoint 等字段只是冻结来源身份，不代表库自行获得读取权限。
+这里的 `FocusRevisionSemanticIndex` 指 Focus 的原 `RevisionSemanticIndex` 类。`result.artifact` 应由宿主保存，用于下一版 baseline；`result.index` 是原 wire 格式。宿主可使用 `engine.contracts(policy)` 获取局部／整体合同和分组 fingerprint，以原有祖先搜索与缓存查询选择 baseline。库中的 namespace 是缓存隔离域，必须由可信宿主确定；checkpoint 等字段只是冻结来源身份，不代表库自行获得读取权限。
 
 `semantic_messages` 必须来自 semantic view。引擎保留 `semantic_policy`、`source_ordinal`、工具结构与元数据；它不负责从 execution view 猜测并排除控制／reasoning 消息。
 

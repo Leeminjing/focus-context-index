@@ -10,6 +10,7 @@ python -m venv .venv
 .venv\Scripts\python -m pytest -q
 .venv\Scripts\python -m examples.focus_integration
 .venv\Scripts\python -m benchmarks.run --repeats 3 --segment-sizes 12 20 30
+.venv\Scripts\python -m benchmarks.contention --context-counts 1 4 16 --repeats 3
 ```
 
 示例和默认 benchmark 使用脚本化模型，不发网络模型请求。它们验证协议、复用和消费记录，不能证明语义质量或真实模型提速。没有 Provider 用量时，token 字段为 `null`，不会假装为零。
@@ -40,4 +41,6 @@ stats = next_result.stats
 - [本轮验证记录](docs/validation.md)
 - [来源文件与校验和](docs/upstream-manifest.json)
 
-Apache-2.0。迁入代码及修改说明见 [NOTICE](NOTICE)。当前为研究版本，尚未发布到 PyPI，也未修改 Focus 的生产调用链。
+v0.2 修复坏 JSON 重试、增量初始阅读窗口和重复取消结算；完整等待时间由 benchmark 外层计时。执行完成与质量达标单独报告。配套 Focus 分支已实现数据库 Store／Admission 与 Curator 调用入口，实际部署和真实历史性能验收仍需单独完成。
+
+Apache-2.0。迁入代码及修改说明见 [NOTICE](NOTICE)。当前为研究版本，尚未发布到 PyPI。

@@ -40,6 +40,7 @@ class ModelCall:
     phase: str
     estimated_input_tokens: int
     output_token_reserve: int
+    attempt: int = 1
 
 
 class Admission(Protocol):
