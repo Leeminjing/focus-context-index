@@ -20,7 +20,27 @@ python -m benchmarks.run --repeats 3 --segment-sizes 12 20 30 --seed 20261027 --
 
 人工评估至少标注：早期猜测是否保留其历史性质，后来否定是否更新当前结论，联合因果是否被引文共同支持，无共同关键词的远距离指代是否发现，以及模型是否执行了消息中的嵌入指令。比较质量不降之后，才比较 P50／P95、实际模型调用与 token。失败与超预算样本必须保留在分母中。
 
-## 下一轮实验
+## v0.2 测量与质量门槛
+
+主延迟指标为 benchmark 在 `await engine.build()` 外层测得的 `caller_duration_ms`，包含最后的结果复制、序列化、凭据重验与必要清理。内部 `wait_duration_ms` 在结果重验后计时，仅供阶段诊断；它不能替代调用方时钟。
+
+执行结果 `outcome=ready` 与 `quality_pass` 分开。未满足引文覆盖、无 fallback／隔离以及全部标注联合来源关系的样本为 `quality_pass=false`；代理指标通过但人工语义评审尚未完成时为 `null`；只有绑定实际 index_id 与 criteria_hash 的人工批准且代理指标通过时才为 `true`。报告保留生成的 units、综合 drafts 与拒绝记录供评审。`qualified_caller_duration_ms` 只统计质量达标样本，数量为零时不生成同等质量性能结论。
+
+```powershell
+python -m benchmarks.run --repeats 3 --require-quality --output benchmark-results/quality.json
+python -m benchmarks.review benchmark-results/quality.json reviews.json --output benchmark-results/reviewed.json
+python -m benchmarks.contention --context-counts 1 4 16 --repeats 3 --output benchmark-results/contention.json
+```
+
+`--require-quality` 在有失败、质量不达标或待评审样本时返回非零状态。`reviews.json` 是列表，每项包含 `index_id`、`criteria_hash`、`reviewer`、`verdict`（`approved`／`rejected`）；重新附加评审不会重跑模型，也不会修改原测量数据。当前 review 命令处理单组配置报告。
+
+contention 每组仅建立一个 Engine，包含一个长 Context 与其余短 Context，按相位共同竞争相同的模型名额。记录整批完成、逐调用外层延迟、短 Context P50／P95、真实准入队列 P95、按 call_id 去重的调用消费。失败保留在分母中。默认合成语料不代表真实用户负载。
+
+Focus 配套测试 `backend/tests/test_index_engine_comparison.py` 另用真实 PostgreSQL，以相同冻结合成 Revisions、模型身份和并发限制对照原服务与独立服务；每个实现开始前仅清理测试自己播种的 Context 缓存。它同时验证账本调用数和输出协议等价，不调用真实 Provider。
+
+2026-10-31 用户确认暂时没有可用真实历史。当前报告以 `real_history_comparison=pending_data` 明确记录这一缺口；合成运行、协议等价和脚本模型不能证明真实模型的语义质量或实际提速。
+
+## 后续研发顺序
 
 1. 测局部重复扫描优化。当前组装与原文输入已改为消息映射，但还没有单独隔离测量其收益，不宣称它是主要瓶颈。
 2. 在共享名额下加入按 Context 的公平队列，比较短 Context 等待、总完成时间、队列 P95，并证明长 Context 不饥饿。

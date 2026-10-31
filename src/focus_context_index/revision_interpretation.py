@@ -66,7 +66,11 @@ class RevisionInterpretationBuilder:
                 RevisionInterpretationProposal, INTERPRETATION_PROMPT, payload
             ):
                 initial = tuple(s.segment_id for s in index.segments)
-        if not self._projector.fits_request(
+        # Optional prefill must obey the same cumulative read limit as explicit
+        # discovery. An oversized changed tail can fall back to inventory-only.
+        if exceeds_limit(len(initial), self._resources.policy.max_exact_reads):
+            initial = ()
+        if not self._projector.fits_available_budget(
             RevisionInterpretationProposal,
             INTERPRETATION_PROMPT,
             inputs.preview_read(initial, requested=False),

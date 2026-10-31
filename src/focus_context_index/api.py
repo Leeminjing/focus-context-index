@@ -52,7 +52,7 @@ class IndexPolicy(FrozenModel):
     segment_max_estimated_tokens: int | None = Field(default=None, ge=1)
     max_attempts: int = Field(default=2, ge=1)
     max_exact_reads: int | None = Field(default=None, ge=0)
-    max_planner_model_calls: int = Field(default=8, ge=1)
+    max_planner_model_calls: int | None = Field(default=8, ge=0)
     max_request_input_tokens: int | None = Field(default=None, ge=1)
     output_token_reserve: int = Field(default=4096, ge=1)
 
@@ -87,6 +87,15 @@ class AttemptReceipt(FrozenModel):
     duration_ms: float = Field(ge=0)
     queue_ms: float = Field(ge=0)
     error_type: str | None = None
+    attempt: int = Field(default=1, ge=1)
+
+
+class IndexContracts(FrozenModel):
+    index_schema_version: str
+    segmenter_version: str
+    local: str
+    interpretation: str
+    revision: str
 
 
 class BuildStats(FrozenModel):

@@ -18,3 +18,4 @@ jobs:
       - run: python -m build
       - run: python -m examples.focus_integration
       - run: python -m benchmarks.run --repeats 1 --segment-sizes 12 --output benchmark-results/ci.json
+      - run: python -m benchmarks.contention --repeats 1 --context-counts 1 4 16 --output benchmark-results/contention-ci.json

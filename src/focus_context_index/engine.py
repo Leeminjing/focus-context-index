@@ -18,12 +18,14 @@ from .api import (
     BuildStats,
     FrozenSnapshot,
     IndexArtifact,
+    IndexContracts,
     IndexPolicy,
     IndexProgress,
     PrewarmResult,
     artifact_key,
 )
 from .contracts import stable_expansion_hash
+from .cancellation import complete_before_cancel
 from .errors import IndexBuildError
 from .index_assembly import assemble_revision_index
 from .index_build_contracts import IndexBuildPlan
@@ -91,6 +93,27 @@ class IndexEngine:
         self._segment_locks = SegmentLocks()
         self._inflight: dict[str, _Shared] = {}
 
+    def contracts(self, policy: IndexPolicy | None = None) -> IndexContracts:
+        """Expose immutable fingerprints for host persistence and ancestry lookup."""
+        policy = policy or IndexPolicy()
+        indexer = RevisionSemanticIndexer(
+            ProtocolSafeRevisionSegmenter(
+                max_messages=policy.segment_max_messages,
+                max_estimated_tokens=policy.segment_max_estimated_tokens,
+            )
+        )
+        identities = {
+            role: self.models.identity(role) for role in ("projector", "verifier", "interpreter")
+        }
+        local, synthesis, revision = _contracts(indexer, policy, identities)
+        return IndexContracts(
+            index_schema_version=indexer.INDEX_SCHEMA_VERSION,
+            segmenter_version=indexer.segmenter_version,
+            local=local,
+            interpretation=synthesis,
+            revision=revision,
+        )
+
     async def build(
         self,
         *,
@@ -152,16 +175,8 @@ class IndexEngine:
             shared.state.observers[token] = observer
         try:
             result = await asyncio.shield(shared.task)
-            stats = result.stats.model_copy(
-                update={
-                    "joined_build": joined,
-                    "wait_duration_ms": (perf_counter() - started) * 1000,
-                }
-            )
             # Every waiter receives its own JSON tree; nested content is never shared.
-            return type(result).model_validate_json(
-                result.model_copy(update={"stats": stats}).model_dump_json()
-            )
+            copied = type(result).model_validate_json(result.model_dump_json())
         finally:
             shared.state.observers.pop(token, None)
             shared.waiters -= 1
@@ -170,7 +185,17 @@ class IndexEngine:
                     del self._inflight[key]
                 if not shared.task.done():
                     shared.task.cancel()
-                await asyncio.gather(shared.task, return_exceptions=True)
+                await complete_before_cancel(asyncio.gather(shared.task, return_exceptions=True))
+        return copied.model_copy(
+            update={
+                "stats": copied.stats.model_copy(
+                    update={
+                        "joined_build": joined,
+                        "wait_duration_ms": (perf_counter() - started) * 1000,
+                    }
+                )
+            }
+        )
 
     async def _execute(
         self, snapshot, baseline, policy, authorization, identities, state, background
@@ -293,7 +318,7 @@ class IndexEngine:
                 for task in tasks:
                     if not task.done():
                         task.cancel()
-                await asyncio.gather(*tasks, return_exceptions=True)
+                await complete_before_cancel(asyncio.gather(*tasks, return_exceptions=True))
                 state.stage_ms["local"] = (perf_counter() - local_started) * 1000
             records = tuple(records)
             if background:
